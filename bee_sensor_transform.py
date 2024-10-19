@@ -2,6 +2,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
 
 
+
+
 def ingest_data(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2):
     # initialize Spark session with GCS connector
     spark = SparkSession.builder.appName("BeeAnalysis").getOrCreate()
@@ -40,8 +42,6 @@ def transform(sensor_df1, sensor_df2):
 
 def data_pipeline(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2):
     # config_gcs_connector()
-    print("Starting transformation")
     sensor_df1, sensor_df2 = ingest_data(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2)
     df = transform(sensor_df1, sensor_df2)
-    print("....Done....")
-    df.head()
+    # df.head()
