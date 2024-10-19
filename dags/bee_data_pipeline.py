@@ -47,6 +47,16 @@ dag = DAG(
     catchup=False,
 )
 
+data_pipeline_counter = Counter(
+    "data_pipeline_runs", "Total runs of the data pipeline"
+)  # To get metrics
+
+
+def start_prometheus_server():
+    # Start a Prometheus metrics server on port 8000
+    start_http_server(8000)
+    print("Prometheus metrics server started at http://localhost:8000")
+
 
 # Define the task to run the Spark pipeline
 def run_spark_pipeline():
@@ -57,11 +67,18 @@ def run_spark_pipeline():
 
 def check_pipeline_status(**kwargs):
     ti = kwargs["ti"]
-    run_bee_sensor_data_transform_pipeline_task_status = ti.xcom_pull(
-        task_ids="data_pipeline"
-    )
-    return run_bee_sensor_data_transform_pipeline_task_status
+    status = ti.xcom_pull(task_ids="data_pipeline")
+    if status == "success":
+        return "success"
+    else:
+        return "failed"
 
+
+prometheus_task = PythonOperator(
+    task_id="start_prometheus",
+    python_callable=start_prometheus_server,
+    dag=dag,
+)
 
 # Create a task using PythonOperator
 run_bee_sensor_data_transform_pipeline_task = PythonOperator(
@@ -82,11 +99,16 @@ status_check_task = PythonOperator(
 email_alert = EmailOperator(
     task_id="send_email",
     to="ahegd005@ucr.edu",
-    subject="Airflow Alert: Task {{run_bee_sensor_data_transform_pipeline_task_status}}",
-    html_content="Task {{ task_instance.task_id }} {{run_bee_sensor_data_transform_pipeline_task_status}}.",
+    subject="Airflow Alert: Bee Data Pipeline Status",
+    html_content="""<h3>The status of the Bee Data Pipeline is: {{ task_instance.xcom_pull(task_ids='check_status') }}</h3>""",
     dag=dag,
 )
 
 
 # Set task dependencies
-run_bee_sensor_data_transform_pipeline_task >> status_check_task >> email_alert
+(
+    prometheus_task
+    >> run_bee_sensor_data_transform_pipeline_task
+    >> status_check_task
+    >> email_alert
+)
