@@ -2,13 +2,13 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
 
 
-def ingest_data(file_path_sensor1, file_path_sensor2):
+def ingest_data(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2):
     # initialize Spark session with GCS connector
     spark = SparkSession.builder.appName("BeeAnalysis").getOrCreate()
-    sensor_df1 = spark.read.csv(file_path_sensor1, header=True, inferSchema=True)
+    sensor_df1 = spark.read.csv(FILE_PATH_SENSOR1, header=True, inferSchema=True)
     # sensor_df1.show()
 
-    sensor_df2 = spark.read.csv(file_path_sensor2, header=True, inferSchema=True)
+    sensor_df2 = spark.read.csv(FILE_PATH_SENSOR2, header=True, inferSchema=True)
     # sensor_df2.show()
 
     return sensor_df1, sensor_df2
@@ -40,6 +40,8 @@ def transform(sensor_df1, sensor_df2):
 
 def data_pipeline(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2):
     # config_gcs_connector()
+    print("Starting transformation")
     sensor_df1, sensor_df2 = ingest_data(FILE_PATH_SENSOR1, FILE_PATH_SENSOR2)
     df = transform(sensor_df1, sensor_df2)
-    df.show_head()
+    print("....Done....")
+    df.head()
